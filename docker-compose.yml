@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for PCE
+  pce-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pce
+      POSTGRES_PASSWORD: pce_password
+      POSTGRES_DB: pce
+    ports:
+      - "5432:5432"
+    volumes:
+      - pce-db-data:/var/lib/postgresql/data
+    networks:
+      - spritz-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Privacy Control Engine
+  pce-service:
+    build:
+      context: ./pce-service
+      dockerfile: Dockerfile
+    ports:
+      - "3032:3032"
+    environment:
+      DATABASE_URL: postgres://pce:pce_password@pce-db:5432/pce
+      RUST_LOG: info
+    depends_on:
+      pce-db:
+        condition: service_healthy
+    networks:
+      - spritz-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3032/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Attestation Manager
+  attestation-manager:
+    build:
+      context: ./attestation-manager
+      dockerfile: Dockerfile
+    ports:
+      - "3030:3030"
+    environment:
+      PCE_URL: http://pce-service:3032
+      DAVINCI_KEYS_DIR: /keys
+      AM_BIND: 0.0.0.0:3030
+      RUST_LOG: info
+    volumes:
+      - ./keys:/keys:ro
+    depends_on:
+      - pce-service
+    networks:
+      - spritz-network
+
+  # Verifier
+  verifier:
+    build:
+      context: ./verifier
+      dockerfile: Dockerfile
+    ports:
+      - "3031:3031"
+    environment:
+      ATTESTATION_MANAGER_URL: http://attestation-manager:3030
+      DAVINCI_KEYS_DIR: /keys
+      VERIFIER_BIND: 0.0.0.0:3031
+      RUST_LOG: info
+    volumes:
+      - ./keys:/keys:ro
+    depends_on:
+      - attestation-manager
+    networks:
+      - spritz-network
+
+  # TPM Simulator
+  tpm-simulator:
+    image: unibuffalo/tpm2-simulator
+    ports:
+      - "2321:2321"
+      - "2322:2322"
+    networks:
+      - spritz-network
+
+volumes:
+  pce-db-data:
+
+networks:
+  spritz-network:
+    driver: bridge

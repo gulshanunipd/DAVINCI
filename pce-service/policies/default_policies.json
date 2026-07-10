@@ -1,0 +1,129 @@
+{
+  "version": "1.0.0",
+  "policies": {
+    "platform_tpm_boot": {
+      "applies_to": {
+        "layer": "Platform",
+        "mode": "BootTime",
+        "source": "Tpm"
+      },
+      "rules": [
+        {
+          "rule_type": "field_presence",
+          "required_fields": ["evidence", "layer", "mode", "source"],
+          "error_message": "Platform boot evidence must contain all required fields"
+        },
+        {
+          "rule_type": "field_pattern",
+          "field_path": "evidence",
+          "pattern": ".*pcr.*",
+          "must_match": true,
+          "error_message": "Platform evidence must contain PCR measurements"
+        },
+        {
+          "rule_type": "timestamp_age",
+          "max_age_seconds": 300,
+          "error_message": "Platform boot evidence must be fresh (max 5 minutes old)"
+        }
+      ]
+    },
+    
+    "hypervisor_tpm_boot": {
+      "applies_to": {
+        "layer": "Hypervisor",
+        "mode": "BootTime",
+        "source": "Tpm"
+      },
+      "rules": [
+        {
+          "rule_type": "field_presence",
+          "required_fields": ["evidence", "layer", "mode", "source"],
+          "error_message": "Hypervisor boot evidence must contain all required fields"
+        },
+        {
+          "rule_type": "field_pattern",
+          "field_path": "evidence",
+          "pattern": ".*pcr.*",
+          "must_match": true,
+          "error_message": "Hypervisor evidence must contain PCR measurements"
+        },
+        {
+          "rule_type": "timestamp_age",
+          "max_age_seconds": 300,
+          "error_message": "Hypervisor boot evidence must be fresh (max 5 minutes old)"
+        }
+      ]
+    },
+    
+    "guest_snp_boot": {
+      "applies_to": {
+        "layer": "Guest",
+        "mode": "BootTime",
+        "source": "SevSnp"
+      },
+      "rules": [
+        {
+          "rule_type": "field_presence",
+          "required_fields": ["evidence", "layer", "mode", "source"],
+          "error_message": "Guest SEV-SNP evidence must contain all required fields"
+        },
+        {
+          "rule_type": "field_pattern",
+          "field_path": "evidence",
+          "pattern": ".*measurement.*",
+          "must_match": true,
+          "error_message": "SEV-SNP evidence must contain measurement data"
+        },
+        {
+          "rule_type": "timestamp_age",
+          "max_age_seconds": 300,
+          "error_message": "Guest boot evidence must be fresh (max 5 minutes old)"
+        }
+      ]
+    },
+    
+    "runtime_ima": {
+      "applies_to": {
+        "layer": "Runtime",
+        "mode": "Runtime",
+        "source": "Ima"
+      },
+      "rules": [
+        {
+          "rule_type": "field_presence",
+          "required_fields": ["evidence", "layer", "mode", "source"],
+          "error_message": "Runtime IMA evidence must contain all required fields"
+        },
+        {
+          "rule_type": "field_pattern",
+          "field_path": "evidence",
+          "pattern": ".*ima.*",
+          "must_match": true,
+          "error_message": "Runtime evidence must contain IMA measurements"
+        },
+        {
+          "rule_type": "timestamp_age",
+          "max_age_seconds": 60,
+          "error_message": "Runtime evidence must be very fresh (max 1 minute old)"
+        }
+      ]
+    },
+    
+    "untrusted_detection": {
+      "applies_to": {
+        "layer": null,
+        "mode": null,
+        "source": null
+      },
+      "rules": [
+        {
+          "rule_type": "field_pattern",
+          "field_path": "evidence",
+          "pattern": ".*(untrusted|malicious|compromised).*",
+          "must_match": false,
+          "error_message": "Evidence contains forbidden keywords indicating untrusted source"
+        }
+      ]
+    }
+  }
+}

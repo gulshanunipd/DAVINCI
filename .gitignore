@@ -1,0 +1,48 @@
+# Rust build artifacts
+target/
+*/target/
+**/target/
+
+# Flycheck
+flycheck*/
+*/flycheck*/
+**/flycheck*/
+
+# Cargo.lock
+Cargo.lock
+*/Cargo.lock
+**/Cargo.lock
+
+# Rust backup files
+*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Rust analyzer
+.rust-analyzer/
+
+# Python
+dav/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+*.tmp
+
+# DAVINCI keys — never commit key material; regenerate with keys/gen-keys.sh
+keys/*.pem
