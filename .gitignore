@@ -46,3 +46,10 @@ build/
 
 # DAVINCI keys — never commit key material; regenerate with keys/gen-keys.sh
 keys/*.pem
+# LaTeX build artifacts
+*.aux
+*.fls
+*.fdb_latexmk
+*.out
+*.toc
+*.synctex.gz
