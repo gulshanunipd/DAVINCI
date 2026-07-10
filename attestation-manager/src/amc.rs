@@ -5,7 +5,7 @@
 //! for tamper evidence.
 
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use uuid::Uuid;
 
 /// Layer in the attestation stack (D3 §4: Platform < Hypervisor < Guest < Application).
