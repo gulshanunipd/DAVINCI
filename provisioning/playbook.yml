@@ -1,0 +1,62 @@
+---
+# Ansible playbook that prepares a machine to build and run DAVINCI.
+# It installs the system libraries, the Rust toolchain, Python, generates the
+# key material, and builds the three services. It is written for Ubuntu 22.04
+# and is used by the Vagrantfile, but you can also run it against any Ubuntu
+# host with:
+#
+#   ansible-playbook -i "localhost," -c local provisioning/playbook.yml
+#
+- name: Provision the DAVINCI environment
+  hosts: all
+  become: true
+  vars:
+    project_dir: /vagrant
+    run_user: vagrant
+
+  tasks:
+    - name: Install the system packages DAVINCI needs
+      apt:
+        name:
+          - build-essential
+          - pkg-config
+          - libssl-dev
+          - openssl
+          - curl
+          - git
+          - python3
+          - ca-certificates
+        update_cache: true
+        state: present
+
+    - name: Install the Rust toolchain for the run user
+      become_user: "{{ run_user }}"
+      shell: >
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
+        | sh -s -- -y --default-toolchain stable
+      args:
+        creates: "/home/{{ run_user }}/.cargo/bin/cargo"
+
+    - name: Generate the DAVINCI key material
+      become_user: "{{ run_user }}"
+      command: bash keys/gen-keys.sh
+      args:
+        chdir: "{{ project_dir }}"
+        creates: "{{ project_dir }}/keys/am_priv.pem"
+
+    - name: Build the three services
+      become_user: "{{ run_user }}"
+      shell: |
+        source "$HOME/.cargo/env"
+        cargo build --manifest-path pce-service/Cargo.toml
+        cargo build --manifest-path attestation-manager/Cargo.toml
+        cargo build --manifest-path verifier/Cargo.toml
+      args:
+        chdir: "{{ project_dir }}"
+        executable: /bin/bash
+
+    - name: Show how to start the services
+      debug:
+        msg:
+          - "Provisioning finished. Enter the VM with: vagrant ssh"
+          - "Then start the services from /vagrant as described in docs/implementation-report.md."
