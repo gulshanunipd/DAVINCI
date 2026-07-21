@@ -53,3 +53,9 @@ keys/*.pem
 *.out
 *.toc
 *.synctex.gz
+
+# Excluded files
+davinci-prototype.zip
+summary.md
+SUMMARY.md
+
