@@ -29,6 +29,7 @@
           - ca-certificates
           - docker.io
           - docker-buildx
+          - docker-compose-v2
           # Runs the small arm64 guest-userland stage of the platform image.
           - qemu-user-static
           - binfmt-support

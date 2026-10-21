@@ -144,7 +144,7 @@ async fn main() {
         .or(health_route);
     
     println!("🚀 PCE ready on http://localhost:3032");
-    println!("   POST /privacy/transform  - Privacy transformations (Tpm, Tdx, SevSnp, Cca)");
+    println!("   POST /privacy/transform  - Privacy transformations (Tpm, Tdx, SevSnp, Cca, OpTee)");
     println!("   POST /validate/node      - Policy validation");
     println!("   POST /resolve/pseudonym  - Resolve pseudonym to public key");
     println!("   GET  /health             - Health check");

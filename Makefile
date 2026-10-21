@@ -68,14 +68,16 @@ run-verifier:
 # Run everything with Docker Compose
 .PHONY: docker-run
 docker-run: keys
-	@echo "Starting services with Docker Compose..."
-	docker-compose up --build
+	@echo "Starting platform + services with Docker Compose..."
+	mkdir -p keys/rot reference   # pre-create bind mounts so they stay user-owned
+	DOCKER_BUILDKIT=1 docker compose up -d --build
+	@echo "Stack starting. Then: make provision && make demo-compare  (logs: docker compose logs -f)"
 
 # Stop Docker services
 .PHONY: docker-stop
 docker-stop:
 	@echo "Stopping Docker services..."
-	docker-compose down
+	docker compose down
 
 # Enroll the RoTs and record reference values (run once the stack is up)
 .PHONY: provision

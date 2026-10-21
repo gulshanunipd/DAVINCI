@@ -23,10 +23,10 @@ You need Docker with BuildKit, about 10 GB of free disk space and at least
   build stage produces the arm64 guest userland, and Docker runs it through
   QEMU user mode.
   ```bash
-  sudo apt install -y docker.io docker-buildx qemu-user-static binfmt-support
+  sudo apt install -y docker.io docker-buildx docker-compose-v2 qemu-user-static binfmt-support
   sudo usermod -aG docker "$USER"     # log out and back in
   ```
-* **Ubuntu/Debian (arm64):** `sudo apt install -y docker.io docker-buildx`.
+* **Ubuntu/Debian (arm64):** `sudo apt install -y docker.io docker-buildx docker-compose-v2`.
 
 Alternatively, `vagrant up` at the repository root provisions an Ubuntu VM with
 all of the above (`provisioning/playbook.yml`).
@@ -58,6 +58,17 @@ To do the same without make:
 DOCKER_BUILDKIT=1 docker build -t davinci-platform mral-adapters
 docker run -d --name davinci-platform -p 4000:4000 -p 4010:4010 -p 4020:4020 \
   -v davinci-platform-state:/var/lib/davinci -v "$PWD/keys/rot":/trust davinci-platform
+```
+
+### Everything in Docker
+
+To run the platform **and** the PCE (with PostgreSQL), the Attestation Manager
+and the Verifier as containers, use Docker Compose instead:
+
+```bash
+make docker-run        # docker compose up -d --build (platform, pce-db, pce, AM, verifier)
+make provision && make demo-compare
+make docker-stop       # docker compose down
 ```
 
 ## 3. Check that both RoTs are up
