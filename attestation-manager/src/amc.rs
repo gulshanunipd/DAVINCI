@@ -37,6 +37,8 @@ pub enum Source {
     SevSnp,
     Tdx,
     Cca,
+    /// OP-TEE attestation PTA (Arm TrustZone)
+    OpTee,
     Ima,
     Evm,
 }

@@ -2,121 +2,103 @@
 """
 Shared helpers for DAVINCI demos.
 
-Produces the normalized evidence envelope the Attestation Manager expects, with a
-real ECDSA-P256 Root-of-Trust signature over (measurement | ts) so the MRAL Auth
-check (D3 Eq. 5) is genuine. Signing is done via the `openssl` CLI to avoid a
-Python cryptography dependency.
+The demos no longer fabricate evidence. They drive the real flow:
+
+  verifier  GET  /challenge          fresh single-use challenge c
+  AM        POST /attest/collect     MRAL pulls TPM + OP-TEE evidence bound to c,
+                                     verifies it, PCE-transforms it, builds the ARG
+  verifier  POST /verify             signed output + ϕ_G + reference values
+
+and use the platform controller (test harness) to power-cycle the emulated
+platform into a good or tampered boot profile.
 """
 
-import hashlib
 import json
 import os
-import subprocess
-import time
-import urllib.request
 import urllib.error
+import urllib.request
+
+AM_URL = os.environ.get("ATTESTATION_MANAGER_URL", "http://localhost:3030")
+VERIFIER_URL = os.environ.get("VERIFIER_URL", "http://localhost:3031")
+PLATFORM_URL = os.environ.get("PLATFORM_URL", "http://localhost:4000")
 
 
-def _post_json(url: str, payload: dict):
-    data = json.dumps(payload).encode()
+def _request(url, payload=None, timeout=60):
+    data = None if payload is None else json.dumps(payload).encode()
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        url, data=data, headers={"Content-Type": "application/json"},
+        method="GET" if payload is None else "POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
-        return {"status": f"http_{e.code}"}
+        try:
+            return json.loads(e.read().decode())
+        except ValueError:
+            return {"error": f"HTTP {e.code}"}
     except Exception as e:  # noqa: BLE001
-        return {"status": f"error: {e}"}
-
-
-def _get_json(url: str):
-    try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            return json.loads(resp.read().decode())
-    except Exception:  # noqa: BLE001
-        return None
-
-KEYS_DIR = os.environ.get(
-    "DAVINCI_KEYS_DIR",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "keys"),
-)
-
-
-def rot_sign(source: str, measurement: str, ts: int) -> str:
-    """ECDSA-P256 sign 'measurement|ts' with the RoT private key -> hex(DER)."""
-    priv = os.path.join(KEYS_DIR, f"rot_{source}_priv.pem")
-    msg = f"{measurement}|{ts}".encode()
-    p = subprocess.run(
-        ["openssl", "dgst", "-sha256", "-sign", priv],
-        input=msg,
-        capture_output=True,
-    )
-    if p.returncode != 0:
-        raise RuntimeError(f"openssl sign failed for {source}: {p.stderr.decode()}")
-    return p.stdout.hex()
-
-
-def make_evidence(source: str, seed: str, claims: dict = None, tamper: bool = False) -> dict:
-    """
-    Build a signed evidence envelope. The RoT signs the *authentic* measurement.
-    If `tamper` is set, the measurement is altered AFTER signing to simulate an
-    adversary modifying evidence in transit — the RoT signature will then fail
-    the MRAL Auth check and the evidence is rejected.
-    """
-    measurement = hashlib.sha256(seed.encode()).hexdigest()
-    ts = int(time.time())
-    sig = rot_sign(source, measurement, ts)
-    if tamper:
-        measurement = hashlib.sha256(("tampered_" + seed).encode()).hexdigest()
-    return {
-        "source": source,
-        "measurement": measurement,
-        "ts": ts,
-        "claims": claims or {},
-        "rot_sig": sig,
-        # Sensitive, verification-irrelevant fields — suppressed by the PCE
-        # (minimal disclosure, D3 §10 / D2 Property 11.3).
-        "hostname": "prod-node-07.internal",
-        "ip_address": "10.0.3.7",
-    }
+        return {"error": str(e)}
 
 
 class DavinciClient:
-    def __init__(self, am_url=None, ver_url=None):
-        self.am_url = am_url or os.environ.get("ATTESTATION_MANAGER_URL", "http://localhost:3030")
-        self.ver_url = ver_url or os.environ.get("VERIFIER_URL", "http://localhost:3031")
+    def __init__(self, am_url=AM_URL, ver_url=VERIFIER_URL, platform_url=PLATFORM_URL):
+        self.am_url, self.ver_url, self.platform_url = am_url, ver_url, platform_url
 
-    def send_boot(self, session_id, layer, source, evidence):
-        return _post_json(
-            f"{self.am_url}/attest/boot",
-            {
-                "session_id": session_id,
-                "layer": layer,
-                "source": source,
-                "evidence": json.dumps(evidence),
-            },
-        )
+    # platform harness
+    def boot(self, profile):
+        return _request(f"{self.platform_url}/boot", {"profile": profile}, timeout=240)
 
-    def send_runtime(self, session_id, evidence):
-        return _post_json(
-            f"{self.am_url}/attest/runtime",
-            {"session_id": session_id, "evidence": json.dumps(evidence)},
-        )
+    def platform_reference(self):
+        return _request(f"{self.platform_url}/reference")
+
+    # attestation manager
+    def enroll(self):
+        return _request(f"{self.am_url}/mral/enroll", {})
+
+    def collect(self, session_id, nonce):
+        return _request(f"{self.am_url}/attest/collect", {"session_id": session_id, "nonce": nonce})
+
+    def arg(self, session_id):
+        r = _request(f"{self.am_url}/arg/{session_id}")
+        return json.loads(r["arg"]) if "arg" in r else {}
+
+    # verifier
+    def challenge(self):
+        return _request(f"{self.ver_url}/challenge")["nonce"]
 
     def verify(self, session_id, nonce):
-        return _post_json(
-            f"{self.ver_url}/verify",
-            {"session_id": session_id, "nonce": nonce},
-        )
+        return _request(f"{self.ver_url}/verify", {"session_id": session_id, "nonce": nonce})
+
+
+def node_evidence(arg):
+    """layer -> parsed (privacy-transformed) evidence of that layer's node."""
+    out = {}
+    for n in arg.get("nodes", {}).values():
+        layer = n["eat_profile"].split(",")[0].split(":")[1]
+        out[layer] = json.loads(n["eat_meas"])
+    return out
+
+
+def print_collection(resp):
+    print(f"   AM collection: {resp.get('status', resp.get('error'))}")
+    for r in resp.get("rots", []):
+        mark = "✓" if r["verified"] else "✗"
+        print(f"     {mark} {r['rot']:5s} {'evidence verified' if r['verified'] else r['error']}")
+        for c in r.get("checks", []):
+            print(f"         · {c}")
+    for n in resp.get("nodes", []):
+        m = n.get("privacy_manifest") or {}
+        print(f"     node {n['layer']:<11} ({n['source']}) {n['status']}"
+              f"  suppressed={m.get('redacted_fields', [])}"
+              f"  abstracted={[a[0] for a in m.get('aggregated_fields', [])]}")
 
 
 def print_verification(result):
-    if not result:
-        print("   ✗ No verification result")
+    res = (result or {}).get("result")
+    if not res:
+        print(f"   ✗ No verification result: {result}")
         return False
-    res = result.get("result", {})
     trusted = res.get("trusted", False)
     print(f"\n   Trust Decision: {'TRUSTED ✅' if trusted else 'NOT TRUSTED ❌'}")
     print(f"   Explanation: {res.get('explanation', 'N/A')}")

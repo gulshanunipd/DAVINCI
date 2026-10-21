@@ -59,3 +59,12 @@ davinci-prototype.zip
 summary.md
 SUMMARY.md
 
+
+# RoT trust material and enrollment are deployment-specific (written by the
+# platform container and POST /mral/enroll); reference values by provision.py.
+keys/rot/
+keys/enrollment.json
+reference/
+
+# Reports and design documents are kept out of the code repository.
+docs/

@@ -1,5 +1,5 @@
 # Dockerfile for DAVINCI Attestation Manager
-FROM rust:1.70 as builder
+FROM rust:1-bookworm AS builder
 
 WORKDIR /usr/src/attestation-manager
 
@@ -13,10 +13,10 @@ COPY ./src ./src
 RUN cargo build --release
 
 # Production image
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Install OpenSSL libraries
-RUN apt-get update && apt-get install -y openssl libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app

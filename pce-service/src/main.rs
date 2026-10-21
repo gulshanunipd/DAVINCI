@@ -176,6 +176,7 @@ async fn handle_transform(
         "Tdx" => DisclosurePolicy::for_tdx(),
         "SevSnp" => DisclosurePolicy::for_snp(),
         "Cca" => DisclosurePolicy::for_cca(),
+        "OpTee" => DisclosurePolicy::for_optee(),
         _ => {
             println!("   ❌ Unsupported source: {}", req.source);
             return Err(warp::reject::custom(UnsupportedSourceError));
@@ -223,6 +224,7 @@ async fn pseudonymize_and_store(
         "Tdx" => vec!["mrseam", "mrtd", "mrconfigid", "mrowner", "mrownerconfig"],
         "SevSnp" => vec!["vcek_cert", "chip_id", "id_key_digest", "author_key_digest"],
         "Cca" => vec!["instance_id", "realm_public_key", "signer_id"],
+        "OpTee" => vec!["attestation_key_fpr"],
         _ => vec![],
     };
     

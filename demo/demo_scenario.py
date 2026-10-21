@@ -2,47 +2,51 @@
 """
 DAVINCI End-to-End Demo Scenario.
 
-Full attestation workflow with real RoT-signed evidence:
-  Platform (TPM) -> Hypervisor (TPM) -> Guest (SEV-SNP) -> Runtime (IMA)
-  -> signed ARG export -> Verifier trust decision.
+One attestation round against the real platform, showing each stage:
 
-Requires PCE (3032), Attestation Manager (3030), Verifier (3031) running.
+  Verifier challenge
+  -> MRAL Collect/Auth: TPM 2.0 quote (Platform PCR 0-7, Hypervisor PCR 8-9)
+                        OP-TEE PTA evidence (Guest: TEE OS, Application: TA)
+  -> PCE Transform (suppress / abstract / pseudonymize)
+  -> AMC + ARG with AM-signed edges
+  -> signed output -> Verifier trust decision
+
+Requires the platform, PCE (3032), AM (3030), Verifier (3031) running and
+provisioning done (demo/provision.py).
 """
 
+import json
 import time
-from davinci_common import DavinciClient, make_evidence, print_verification
+
+from davinci_common import DavinciClient, node_evidence, print_collection, print_verification
 
 
 def main():
     session_id = f"demo_session_{int(time.time())}"
     client = DavinciClient()
 
-    print("=" * 64)
+    print("=" * 72)
     print(f"DAVINCI End-to-End Attestation Demo   (session: {session_id})")
-    print("=" * 64)
+    print("=" * 72)
 
-    steps = [
-        ("platform", "tpm", "platform_boot_measurement", "1. Platform boot (TPM)"),
-        ("hypervisor", "tpm", "hypervisor_boot_measurement", "2. Hypervisor launch (TPM)"),
-        ("guest", "snp", "guest_vm_measurement", "3. Guest VM launch (SEV-SNP)"),
-    ]
-    for layer, source, seed, title in steps:
-        print(f"\n{title} ...")
-        r = client.send_boot(session_id, layer, source, make_evidence(source, seed))
-        print(f"   AM: {r.get('status')}  node={r.get('node_id')}")
+    nonce = client.challenge()
+    print(f"\n1. Verifier issues challenge c = {nonce[:16]}…")
 
-    print("\n4. Runtime integrity (IMA) ...")
-    r = client.send_runtime(session_id, make_evidence("ima", "ima_runtime_measurement"))
-    print(f"   AM: {r.get('status')}  node={r.get('node_id')}")
+    print("\n2. Attestation Manager: Collect (MRAL) -> Transform (PCE) -> Attest (AMC/ARG)")
+    print_collection(client.collect(session_id, nonce))
 
-    nonce = f"chal_{int(time.time()*1000)}"
-    print(f"\n5. Verifying complete attestation chain (challenge={nonce}) ...")
-    result = client.verify(session_id, nonce)
-    print_verification(result)
+    print("\n3. Privacy-transformed evidence in the ARG (what the verifier sees):")
+    for layer, ev in node_evidence(client.arg(session_id)).items():
+        shown = {k: (v[:20] + "…" if isinstance(v, str) and len(v) > 24 else v)
+                 for k, v in ev.items() if k not in ("pcrs", "clock_info")}
+        print(f"   {layer}: {json.dumps(shown, ensure_ascii=False)}")
 
-    print("\n" + "=" * 64)
+    print("\n4. Verifier: output signature, freshness, ϕ_G, reference values")
+    print_verification(client.verify(session_id, nonce))
+
+    print("\n" + "=" * 72)
     print("DAVINCI Demo Completed!")
-    print("=" * 64)
+    print("=" * 72)
 
 
 if __name__ == "__main__":

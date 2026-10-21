@@ -2,9 +2,14 @@
 //!
 //! Implements the concrete DAVINCI `Verify` (D3 §5.7): it fetches the signed
 //! attestation output from the AM, checks the AM's ECDSA-P256 signature over the
-//! output, confirms the challenge it issued is bound in, and evaluates the
-//! graph-validity predicate ϕ_G. The trust decision is the conjunction — not a
+//! output, confirms the challenge it issued is bound in, evaluates the
+//! graph-validity predicate ϕ_G, and appraises every node's evidence (RoT-level
+//! freshness, reference values). The trust decision is the conjunction — not a
 //! guess based on the session name.
+//!
+//! Challenges are issued by this service (`GET /challenge`), expire after
+//! `CHALLENGE_TTL_SECS` and are single-use, so a recorded attestation cannot
+//! be replayed against a later verification.
 
 mod crypto;
 mod verification;
@@ -12,11 +17,17 @@ mod verification;
 use warp::Filter;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::env;
 use std::net::SocketAddr;
 use openssl::pkey::{PKey, Public};
-use crate::verification::{produce_trust_decision, verify_graph, VerificationDetail, VerificationResult};
+use crate::verification::{
+    appraise_evidence, produce_trust_decision, verify_graph, VerificationDetail, VerificationResult,
+};
+
+const CHALLENGE_TTL_SECS: u64 = 300;
 
 /// Request to verify an attestation session.
 #[derive(Debug, Clone, Deserialize)]
@@ -38,6 +49,14 @@ struct VState {
     am_pub: Arc<PKey<Public>>,
     am_url: String,
     client: reqwest::Client,
+    /// Outstanding challenges → issue time (unix seconds).
+    challenges: Arc<Mutex<HashMap<String, u64>>>,
+    /// Reference values (endorsed measurements), re-read on every verification.
+    reference_path: String,
+}
+
+fn now() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
 }
 
 #[tokio::main]
@@ -51,12 +70,29 @@ async fn main() {
         .unwrap_or_else(|_| "0.0.0.0:3031".to_string())
         .parse()
         .expect("invalid VERIFIER_BIND");
+    let reference_path = env::var("DAVINCI_REFERENCE")
+        .unwrap_or_else(|_| "../reference/reference-values.json".to_string());
 
     let state = VState {
         am_pub: Arc::new(am_pub),
         am_url,
         client: reqwest::Client::new(),
+        challenges: Arc::new(Mutex::new(HashMap::new())),
+        reference_path,
     };
+
+    let challenge = warp::path("challenge")
+        .and(warp::get())
+        .and(with_state(state.clone()))
+        .map(|st: VState| {
+            let mut buf = [0u8; 32];
+            openssl::rand::rand_bytes(&mut buf).expect("rng");
+            let nonce = hex::encode(buf);
+            let mut ch = st.challenges.lock().unwrap();
+            ch.retain(|_, t| now() - *t <= CHALLENGE_TTL_SECS);
+            ch.insert(nonce.clone(), now());
+            warp::reply::json(&json!({ "nonce": nonce, "expires_in": CHALLENGE_TTL_SECS }))
+        });
 
     let verify = warp::path("verify")
         .and(warp::path::end())
@@ -69,10 +105,11 @@ async fn main() {
         .and(warp::get())
         .map(|| warp::reply::json(&json!({ "status": "ok" })));
 
-    let routes = verify.or(health).with(warp::cors().allow_any_origin());
+    let routes = verify.or(challenge).or(health).with(warp::cors().allow_any_origin());
 
     println!("🔎 Verifier on {}", bind);
     println!("   Attestation Manager at {}", state.am_url);
+    println!("   Reference values      {}", state.reference_path);
     warp::serve(routes).run(bind).await;
 }
 
@@ -85,6 +122,15 @@ async fn handle_verify(
         request.session_id, request.nonce
     );
     let mut details: Vec<VerificationDetail> = Vec::new();
+
+    // The challenge must be one we issued, unexpired, and unused (consumed now).
+    let issued = state.challenges.lock().unwrap().remove(&request.nonce);
+    let live = matches!(issued, Some(t) if now() - t <= CHALLENGE_TTL_SECS);
+    details.push(mk(
+        "Challenge Issued by Verifier (single-use, unexpired)",
+        live,
+        "unknown, expired or already-used challenge (replay)",
+    ));
 
     // Fetch the signed attestation output (out, pf) from the AM, binding our nonce.
     let url = format!(
@@ -125,12 +171,18 @@ async fn handle_verify(
     details.push(mk("Output Signature (ECDSA-P256)", sig_ok, "AM signature over output invalid"));
 
     // 2. Freshness: the challenge we issued must be the one bound into the output.
-    let fresh = !request.nonce.is_empty() && challenge == request.nonce;
-    details.push(mk("Freshness (challenge binding)", fresh, "challenge mismatch / replay"));
+    let fresh = !request.nonce.is_empty() && challenge == request.nonce && sid == request.session_id;
+    details.push(mk("Freshness (challenge binding)", fresh, "challenge or session mismatch / replay"));
 
     // 3. Graph validity ϕ_G.
     let arg_val: Value = serde_json::from_str(arg_str).unwrap_or_else(|_| json!({}));
     details.append(&mut verify_graph(&arg_val, &state.am_pub));
+
+    // 4. Evidence appraisal: RoT-level freshness + reference values.
+    let reference: Option<Value> = std::fs::read_to_string(&state.reference_path)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok());
+    details.append(&mut appraise_evidence(&arg_val, sid, &request.nonce, reference.as_ref()));
 
     let result = produce_trust_decision(details);
     println!(

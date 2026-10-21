@@ -1,0 +1,25 @@
+#!/bin/sh
+# DAVINCI guest init (normal world). Brings up the OP-TEE client stack and
+# serves the OP-TEE collector on :8080 for the MRAL in the Attestation Manager.
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+mkdir -p /data/tee /lib/optee_armtz
+
+# OP-TEE secure storage (holds the PTA attestation key) persists on the host,
+# so the enrolled attestation key survives guest reboots.
+mount -t 9p -o trans=virtio,version=9p2000.L teestore /data/tee
+# Trusted Applications are provided by the platform image (not part of the
+# measured initramfs); OP-TEE verifies their signature before loading them.
+mount -t 9p -o trans=virtio,version=9p2000.L,ro tastore /lib/optee_armtz
+
+tee-supplicant -d -f /data/tee
+
+ip link set lo up
+ip link set eth0 up
+ip addr add 10.0.2.15/24 dev eth0
+ip route add default via 10.0.2.2
+
+httpd -p 8080 -h /www
+echo "DAVINCI_GUEST_READY"
+exec sh

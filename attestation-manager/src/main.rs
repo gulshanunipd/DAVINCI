@@ -1,10 +1,11 @@
 //! Attestation Manager Service
 //!
-//! Orchestrates the DAVINCI attester side (D3 §8). For each evidence item it:
-//!   1. runs the MRAL `Auth` check (RoT signature over µ|ts) — Collect,
+//! Orchestrates the DAVINCI attester side (D3 §8). On every collection it:
+//!   1. drives the MRAL, which calls each Root of Trust's collector on the
+//!      attested platform and verifies the evidence natively — Collect/Auth,
 //!   2. applies the PCE privacy transform (fail-closed) — Transform,
-//!   3. inserts a hash-linked AMC node and builds the ARG with AM-signed
-//!      trust edges — Attest,
+//!   3. inserts hash-linked AMC nodes and builds the ARG with AM-signed trust
+//!      edges — Attest,
 //! and exposes a signed, challenge-bound attestation output for the Verifier.
 
 mod amc;
@@ -21,32 +22,26 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use chrono::Utc;
-use openssl::pkey::{PKey, Private, Public};
+use openssl::pkey::{PKey, Private};
 use crate::amc::{AcmChain, AcmNode};
 use crate::arg::AttestationRecordGraph;
 use crate::amc::Layer;
-use crate::arg::{ArgEdge, ArgRelationship};
+use crate::arg::ArgEdge;
+use crate::mral::{CollectedNode, Mral, MralConfig};
 
-/// Request to add boot-time evidence
+/// Request to collect fresh evidence from all Roots of Trust.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct BootAttestationRequest {
+struct CollectRequest {
     session_id: String,
+    /// Verifier challenge; every RoT signature is bound to it.
+    nonce: String,
+}
+
+/// Per-node outcome of a collection.
+#[derive(Debug, Clone, Serialize)]
+struct NodeResult {
     layer: String,
     source: String,
-    /// Raw evidence envelope (JSON string): {source, measurement, ts, claims, rot_sig, ...}
-    evidence: String,
-}
-
-/// Request to add runtime evidence
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct RuntimeAttestationRequest {
-    session_id: String,
-    evidence: String,
-}
-
-/// Response for an attestation submission
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct AttestationResponse {
     status: String,
     node_id: Option<Uuid>,
     privacy_manifest: Option<PceDisclosureManifest>,
@@ -89,7 +84,7 @@ struct PcePrivacyRisk {
 #[derive(Clone)]
 struct SessionState {
     arg: AttestationRecordGraph,
-    last_boot_nodes: HashMap<Layer, Uuid>,
+    last_nodes: HashMap<Layer, Uuid>,
     manifests: Vec<PceDisclosureManifest>,
 }
 
@@ -97,7 +92,7 @@ impl SessionState {
     fn new() -> Self {
         SessionState {
             arg: AttestationRecordGraph::new(),
-            last_boot_nodes: HashMap::new(),
+            last_nodes: HashMap::new(),
             manifests: Vec::new(),
         }
     }
@@ -113,8 +108,8 @@ struct AppState {
     am_key: Arc<PKey<Private>>,
     /// AM public key PEM (τ) served to the Verifier.
     am_pub_pem: Arc<String>,
-    /// Trusted material: per-source RoT public keys pk_r (D3 §9).
-    rot_pubkeys: Arc<HashMap<String, PKey<Public>>>,
+    /// Multi-RoT Abstraction Layer (collectors + RoT trust material).
+    mral: Arc<Mral>,
     /// PCE base URL (env PCE_URL).
     pce_url: String,
 }
@@ -134,16 +129,15 @@ async fn main() {
     let am_pub_pem = fs::read_to_string(format!("{}/am_pub.pem", keys_dir))
         .expect("read AM public key PEM");
 
-    // Load per-source RoT public keys (trusted material tm_r).
-    let mut rot_pubkeys = HashMap::new();
-    for src in ["tpm", "snp", "tdx", "cca", "ima"] {
-        match crypto::load_public_key(&format!("{}/rot_{}_pub.pem", keys_dir, src)) {
-            Ok(k) => {
-                rot_pubkeys.insert(src.to_string(), k);
-            }
-            Err(e) => println!("⚠️  RoT key for '{}' not loaded: {}", src, e),
-        }
-    }
+    // MRAL: where the RoT collectors run and where RoT trust material lives.
+    let mral = Mral::new(MralConfig {
+        tpm_url: env::var("MRAL_TPM_URL").unwrap_or_else(|_| "http://localhost:4010".to_string()),
+        optee_url: env::var("MRAL_OPTEE_URL")
+            .unwrap_or_else(|_| "http://localhost:4020/cgi-bin/attest".to_string()),
+        trust_dir: env::var("DAVINCI_TRUST_DIR").unwrap_or_else(|_| format!("{}/rot", keys_dir)),
+        store_path: format!("{}/enrollment.json", keys_dir),
+    });
+    let enrolled = mral.enrollment();
 
     let state = AppState {
         amc_chain: Arc::new(Mutex::new(AcmChain::new())),
@@ -151,23 +145,27 @@ async fn main() {
         pce_client: reqwest::Client::new(),
         am_key: Arc::new(am_key),
         am_pub_pem: Arc::new(am_pub_pem),
-        rot_pubkeys: Arc::new(rot_pubkeys),
+        mral: Arc::new(mral),
         pce_url,
     };
 
-    let boot_attest = warp::path("attest")
-        .and(warp::path("boot"))
+    // Enrollment of the Roots of Trust (provisioning step).
+    let enroll = warp::path!("mral" / "enroll")
         .and(warp::post())
         .and(with_state(state.clone()))
-        .and(warp::body::json::<BootAttestationRequest>())
-        .and_then(handle_boot_attestation);
+        .and_then(handle_enroll);
 
-    let runtime_attest = warp::path("attest")
-        .and(warp::path("runtime"))
+    let mral_status = warp::path!("mral" / "status")
+        .and(warp::get())
+        .and(with_state(state.clone()))
+        .and_then(handle_mral_status);
+
+    // Collect fresh, challenge-bound evidence from every RoT (Collect → Transform → Attest).
+    let collect = warp::path!("attest" / "collect")
         .and(warp::post())
         .and(with_state(state.clone()))
-        .and(warp::body::json::<RuntimeAttestationRequest>())
-        .and_then(handle_runtime_attestation);
+        .and(warp::body::json::<CollectRequest>())
+        .and_then(handle_collect);
 
     // Signed, challenge-bound attestation output (the Attest export consumed by Verify).
     let attest_output = warp::path("attest")
@@ -191,16 +189,24 @@ async fn main() {
         .and(with_state(state.clone()))
         .and_then(handle_pubkey);
 
-    let routes = boot_attest
-        .or(runtime_attest)
+    let routes = enroll
+        .or(mral_status)
+        .or(collect)
         .or(attest_output)
         .or(get_arg)
         .or(pubkey)
         .with(warp::cors().allow_any_origin());
 
+    let cfg = state.mral.config();
     println!("🔐 Attestation Manager on {}", bind);
     println!("   PCE (fail-closed) at {}", state.pce_url);
-    println!("   RoT trust material loaded for {} source(s)", state.rot_pubkeys.len());
+    println!("   MRAL TPM collector   {}", cfg.tpm_url);
+    println!("   MRAL OP-TEE collector {}", cfg.optee_url);
+    println!(
+        "   enrolled RoTs: tpm={} optee={}",
+        enrolled.tpm.is_some(),
+        enrolled.optee.is_some()
+    );
     warp::serve(routes).run(bind).await;
 }
 
@@ -235,133 +241,91 @@ async fn call_pce_transformation(
         .map_err(|e| format!("PCE response parse failed: {}", e))
 }
 
-/// Map the request source string to the PCE source enum name.
-fn pce_source_name(source: &str) -> Option<&'static str> {
-    match source.to_lowercase().as_str() {
-        "tpm" => Some("Tpm"),
-        "snp" => Some("SevSnp"),
-        "tdx" => Some("Tdx"),
-        "cca" => Some("Cca"),
-        "ima" => Some("Tpm"), // IMA log rides the TPM disclosure profile
-        _ => None,
+/// Map an evidence source to the PCE disclosure-profile name.
+fn pce_source_name(source: &amc::Source) -> &'static str {
+    match source {
+        amc::Source::Tpm | amc::Source::Ima | amc::Source::Evm => "Tpm",
+        amc::Source::SevSnp => "SevSnp",
+        amc::Source::Tdx => "Tdx",
+        amc::Source::Cca => "Cca",
+        amc::Source::OpTee => "OpTee",
     }
 }
 
-fn reject(status: String) -> Result<warp::reply::Json, warp::Rejection> {
-    Ok(warp::reply::json(&AttestationResponse {
+/// Handler for RoT enrollment.
+async fn handle_enroll(state: AppState) -> Result<impl warp::Reply, warp::Rejection> {
+    println!("🪪 MRAL enrollment");
+    let reports = state.mral.enroll().await;
+    for r in &reports {
+        match &r.error {
+            None => println!("   ✅ {} enrolled", r.rot),
+            Some(e) => println!("   ❌ {} not enrolled: {}", r.rot, e),
+        }
+    }
+    let ok = reports.iter().all(|r| r.verified);
+    Ok(warp::reply::json(&json!({ "enrolled": ok, "rots": reports })))
+}
+
+/// Current enrollment (trusted RoT keys).
+async fn handle_mral_status(state: AppState) -> Result<impl warp::Reply, warp::Rejection> {
+    Ok(warp::reply::json(&state.mral.enrollment()))
+}
+
+/// Handler for a collection round: Collect/Auth (MRAL) → Transform → Attest.
+async fn handle_collect(
+    state: AppState,
+    request: CollectRequest,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    println!(
+        "📥 collect | session '{}' | challenge '{}'",
+        request.session_id, request.nonce
+    );
+    let (nodes, rot_reports) = state.mral.collect(&request.session_id, &request.nonce).await;
+    for r in &rot_reports {
+        match &r.error {
+            None => println!("   ✅ Auth OK: {} evidence verified", r.rot),
+            Some(e) => println!("   ❌ Auth failed: {}: {}", r.rot, e),
+        }
+    }
+
+    let mut results = Vec::new();
+    for node in nodes {
+        results.push(admit_node(&state, &request.session_id, node).await);
+    }
+    let status = if rot_reports.iter().all(|r| r.verified)
+        && results.iter().all(|r| r.status == "success")
+    {
+        "success"
+    } else {
+        "partial"
+    };
+    Ok(warp::reply::json(&json!({
+        "status": status,
+        "rots": rot_reports,
+        "nodes": results,
+    })))
+}
+
+/// Transform (PCE, fail-closed) and Attest (AMC + ARG) one verified node.
+async fn admit_node(state: &AppState, session_id: &str, node: CollectedNode) -> NodeResult {
+    let layer_name = format!("{:?}", node.layer);
+    let source_name = format!("{:?}", node.source);
+    let fail = |status: String| NodeResult {
+        layer: layer_name.clone(),
+        source: source_name.clone(),
         status,
         node_id: None,
         privacy_manifest: None,
         privacy_risks: None,
-    }))
-}
-
-/// Handler for boot-time attestation requests.
-async fn handle_boot_attestation(
-    state: AppState,
-    request: BootAttestationRequest,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    println!(
-        "📥 boot attest | session '{}' | layer {} | source {}",
-        request.session_id, request.layer, request.source
-    );
-
-    let layer = match request.layer.as_str() {
-        "platform" => Layer::Platform,
-        "hypervisor" => Layer::Hypervisor,
-        "guest" => Layer::Guest,
-        _ => Layer::Platform,
-    };
-    let source = match request.source.to_lowercase().as_str() {
-        "snp" => amc::Source::SevSnp,
-        "tdx" => amc::Source::Tdx,
-        "cca" => amc::Source::Cca,
-        _ => amc::Source::Tpm,
-    };
-    let parent_layer = match layer {
-        Layer::Platform => None,
-        Layer::Hypervisor => Some(Layer::Platform),
-        Layer::Guest => Some(Layer::Hypervisor),
-        Layer::Application => Some(Layer::Guest),
     };
 
-    process_evidence(
-        state,
-        request.session_id,
-        request.source,
-        request.evidence,
-        layer,
-        amc::Mode::BootTime,
-        source,
-        parent_layer,
-        ArgRelationship::VmIncludesHypervisor,
-    )
-    .await
-}
-
-/// Handler for runtime (IMA) attestation requests.
-async fn handle_runtime_attestation(
-    state: AppState,
-    request: RuntimeAttestationRequest,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    println!("📥 runtime attest | session '{}'", request.session_id);
-
-    process_evidence(
-        state,
-        request.session_id,
-        "ima".to_string(),
-        request.evidence,
-        Layer::Application,
-        amc::Mode::Runtime,
-        amc::Source::Ima,
-        Some(Layer::Guest),
-        ArgRelationship::RuntimeLinkedToBoot,
-    )
-    .await
-}
-
-/// Shared Collect → Transform → Attest pipeline for one evidence item.
-#[allow(clippy::too_many_arguments)]
-async fn process_evidence(
-    state: AppState,
-    session_id: String,
-    source_str: String,
-    evidence_str: String,
-    layer: Layer,
-    mode: amc::Mode,
-    source: amc::Source,
-    parent_layer: Option<Layer>,
-    relationship: ArgRelationship,
-) -> Result<warp::reply::Json, warp::Rejection> {
-    // Parse the raw evidence envelope.
-    let evidence: serde_json::Value = match serde_json::from_str(&evidence_str) {
-        Ok(v) => v,
-        Err(e) => return reject(format!("rejected_parse: {}", e)),
-    };
-
-    // 1. Collect / MRAL Auth: verify the RoT signature before admission.
-    let src_key = source_str.to_lowercase();
-    match state.rot_pubkeys.get(&src_key) {
-        None => return reject(format!("rejected_unknown_source: {}", source_str)),
-        Some(rot_pub) => {
-            if let Err(e) = mral::verify_rot_auth(&evidence, rot_pub) {
-                println!("   ❌ Auth failed: {}", e);
-                return reject(format!("rejected_auth: {}", e));
-            }
-        }
-    }
-    println!("   ✅ Auth OK (RoT signature valid)");
-
-    // 2. Transform / PCE (fail-closed: no privacy → no admission).
-    let pce_source = match pce_source_name(&source_str) {
-        Some(s) => s,
-        None => return reject(format!("rejected_unknown_source: {}", source_str)),
-    };
+    // Transform / PCE (fail-closed: no privacy → no admission).
+    let evidence_str = node.evidence.to_string();
     let pce = match call_pce_transformation(
         &state.pce_client,
         &state.pce_url,
-        &session_id,
-        pce_source,
+        session_id,
+        pce_source_name(&node.source),
         &evidence_str,
     )
     .await
@@ -369,21 +333,22 @@ async fn process_evidence(
         Ok(r) => r,
         Err(e) => {
             println!("   ❌ PCE unavailable, failing closed: {}", e);
-            return reject(format!("rejected_pce_unavailable: {}", e));
+            return fail(format!("rejected_pce_unavailable: {}", e));
         }
     };
     println!(
-        "   🔒 PCE: {} redacted, {} aggregated, {} risks",
+        "   🔒 PCE {}: {} redacted, {} aggregated, {} risks",
+        layer_name,
         pce.manifest.redacted_fields.len(),
         pce.manifest.aggregated_fields.len(),
         pce.risks.len()
     );
 
-    // 3. Attest: AMC insert (hash-linked) + ARG node with AM-signed edge.
-    let node = AcmNode::new(layer.clone(), mode, source, pce.transformed_evidence, None, None);
+    // Attest: AMC insert (hash-linked) + ARG node with AM-signed edge.
+    let amc_node = AcmNode::new(node.layer.clone(), node.mode, node.source, pce.transformed_evidence, None, None);
     let linked = {
         let mut chain = state.amc_chain.lock().unwrap();
-        chain.add_node(node)
+        chain.add_node(amc_node)
     };
     let node_id = linked.jti;
     let node_hash = linked.hash.clone();
@@ -391,14 +356,16 @@ async fn process_evidence(
     {
         let mut sessions = state.sessions.lock().unwrap();
         let session = sessions
-            .entry(session_id.clone())
+            .entry(session_id.to_string())
             .or_insert_with(SessionState::new);
 
-        if let Some(pl) = parent_layer {
-            if let Some(&parent_id) = session.last_boot_nodes.get(&pl) {
-                if let Some(parent_hash) =
-                    session.arg.nodes.get(&parent_id).map(|n| n.hash.clone())
-                {
+        if let Some((parent_layer, relationship)) = node.parent {
+            match session
+                .last_nodes
+                .get(&parent_layer)
+                .and_then(|pid| session.arg.nodes.get(pid).map(|n| (*pid, n.hash.clone())))
+            {
+                Some((parent_id, parent_hash)) => {
                     let msg = arg::edge_signing_message(
                         &node_id,
                         &parent_id,
@@ -408,7 +375,7 @@ async fn process_evidence(
                     );
                     let signature = crypto::sign_hex(&state.am_key, msg.as_bytes()).ok();
                     if signature.is_some() {
-                        println!("   🔗 AM-signed edge {} → {}", node_id, parent_id);
+                        println!("   🔗 AM-signed edge {:?} → {:?}", node.layer, parent_layer);
                     }
                     session.arg.add_edge(ArgEdge {
                         from: node_id,
@@ -416,26 +383,24 @@ async fn process_evidence(
                         relationship,
                         signature,
                     });
-                } else {
-                    println!("   ⚠️  parent {:?} node missing from ARG", pl);
                 }
-            } else {
-                println!("   ⚠️  no parent node for layer {:?}", pl);
+                None => println!("   ⚠️  no admitted {:?} node to anchor {:?}", parent_layer, node.layer),
             }
         }
 
         session.arg.add_node(linked);
-        // Only boot-time nodes are chain parents for later layers.
-        session.last_boot_nodes.insert(layer, node_id);
+        session.last_nodes.insert(node.layer, node_id);
         session.manifests.push(pce.manifest.clone());
     }
 
-    Ok(warp::reply::json(&AttestationResponse {
+    NodeResult {
+        layer: layer_name,
+        source: source_name,
         status: "success".to_string(),
         node_id: Some(node_id),
         privacy_manifest: Some(pce.manifest),
         privacy_risks: Some(pce.risks),
-    }))
+    }
 }
 
 /// Export the signed, challenge-bound attestation output (Attest → Verify).

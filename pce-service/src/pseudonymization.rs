@@ -59,6 +59,7 @@ impl PseudonymManager {
             "Tdx" => vec!["mrseam", "mrtd", "mrconfigid", "mrowner", "mrownerconfig"],
             "SevSnp" => vec!["vcek_cert", "chip_id", "id_key_digest", "author_key_digest"],
             "Cca" => vec!["instance_id", "realm_public_key", "signer_id"],
+            "OpTee" => vec!["attestation_key_fpr"],
             _ => vec![],
         };
         

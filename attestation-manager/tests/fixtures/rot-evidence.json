@@ -1,0 +1,135 @@
+{
+ "nonce": "5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e",
+ "tpm": {
+  "ek_cert": "-----BEGIN CERTIFICATE-----\nMIID9DCCAlygAwIBAgIBAjANBgkqhkiG9w0BAQsFADAYMRYwFAYDVQQDDA1zd3Rw\nbS1sb2NhbGNhMCAXDTI2MTAyMTA2MjMwMloYDzk5OTkxMjMxMjM1OTU5WjASMRAw\nDgYDVQQDEwd1bmtub3duMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\ntoTDzvyWP4chc0dAC4/enqaxpNCw660FKtccV3ysqeGKyYidNHwc2vLrW4+18dVN\nmMCuyfGStC+CrH69BZwOgl9du6IYD9JZUlfcEmue2SPdl74K4qTPFefRTj/qg7Tk\nYWq4dR9LjMftwBB5bWuQWnwpNxyqXf3lebE06OqpedxSQHli75pOJWDLnZ+jefAe\n2/JxG8m4kg2YXi+RqpaST0NyWSUcvXy5H/goqloXkPNqHWQ6c8zf9k+lunq4xb52\nQPyHE3/b8JzuYb2XjENeG5W3/MaeFIE6yp/qaiGD9vKsUOfP/njPyrosfJIgKuB7\niRtU7bRjfQuokwCRtI0hAwIDAQABo4HMMIHJMBAGA1UdJQQJMAcGBWeBBQgBMFIG\nA1UdEQEB/wRIMEakRDBCMRYwFAYFZ4EFAgEMC2lkOjAwMDAxMDE0MRAwDgYFZ4EF\nAgIMBXN3dHBtMRYwFAYFZ4EFAgMMC2lkOjIwMTkxMDIzMAwGA1UdEwEB/wQCMAAw\nIgYDVR0JBBswGTAXBgVngQUCEDEOMAwMAzIuMAIBAAICAKQwHwYDVR0jBBgwFoAU\nViMPQRXVdxDIb/7qquPJBphz010wDgYDVR0PAQH/BAQDAgUgMA0GCSqGSIb3DQEB\nCwUAA4IBgQAxIHXjHhKF/IEisy5xJcpeKyGEUEdMmFyinV/M0Mj34gAJGcc0YrN5\n6NbAFHF0aT21U4OtDFhoFcoRmgo5WIAixDGs620noY/jR1M0bQzW4w/b8/92rpmD\ndX5Rw4aZGFuvaEiKd9xaTV2SA3K6561/czdlk8qnmXTebCzGu5IMh95e/6YmjMw7\nK1Qw8oMqxH8mIf64rFpPSK9oygJrlnrEUf3Vw2dWuEmCqCnp348AJbth6vKQzOHb\nz2JeQItDkrVplpCACZj9gqkFoBzxMTBiXotNm3dvKLMH7hPL3LRBq/yqG5GkiGRJ\n28dSE9tcfnXIjksk231vxDFCCshSTzsKQ63PcI7CFDCpMtGHEyBKdyWMLb5Ohbxb\nDNDOqLfBB5E+ONfe5kdgmK4xd0Cmx2j2b0D4e08ofXtvx0xnjzlPjd0sywG5YAQG\nSQzfgLxrZ98HghMoMwOdjFadUHgKvpub5YheU7NEYuo0tnZWUvowSA7kvW5pARLp\nQBS8wxv7DgA=\n-----END CERTIFICATE-----\n",
+  "ak_public": "00580023000b00050072000000100018000b000300100020b6959376543a2d73f4e0ac28ce14502e4f620ce323857f8da31aa4398ca1b2e00020fdb9834e6fd2e9c136294f232e0672cf2aab36165904cddb304116f0e1850cd4",
+  "ak_name": "000bd0347aab5dead842812bc7297282241d3ce12c4a227a74dace95483b5953e718",
+  "root_ca": "-----BEGIN CERTIFICATE-----\nMIIEEDCCAnigAwIBAgIUDLd6xWdoF0VxyhKDUlZLk78Z0vowDQYJKoZIhvcNAQEL\nBQAwHzEdMBsGA1UEAwwUc3d0cG0tbG9jYWxjYS1yb290Y2EwIBcNMjYxMDIxMDYy\nMzAyWhgPMjA1NjEwMTkwNjIzMDJaMB8xHTAbBgNVBAMMFHN3dHBtLWxvY2FsY2Et\ncm9vdGNhMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAt6PZL3FKELbk\njVPla28oSU85FEjO7vXatpg3++ewfKnzxHca2sYdskb2ZlmpkqYv3E3lK0D/BJk7\n5tL8DV2R/KseALlu/rY31eA43QguSBthF0qQG5pWSodLVeNWebvDnsIV3xDSBPn+\n3LLDiAABI4GN/N6f64L5wvqt/QrFZ8d0bNGWXzaEeZxkFd7Pl3y0tc03OeY9M46m\nkc1LvkROyGGJX3eQKDNRXljsiy04Z+1Y7x9e4SDpECTQ6kzTxaI1TB2FFcDVHSzO\nR+20/iqtpKF2nepBb/sessiJ94abBBTmwl9rZza89xd3EjCxn9KFRgNL2OGQaI4N\nNkB2tMoEYjVOMw31n7zX/iRfIwFKQPOLtNqYk+O8mmmFFe0aSaqRGG0thv03EvQ4\nS1++a8B3DOg3jiFAqvMv8OOY5iqIwu/Ytj9fd356qrhPKENcdbBUVVOHCn++vEKE\nOhdXT5xfXv6zU5qMwKmRzDLftfBQwUkpDwht8LAM/dCNdFo5Mcq7AgMBAAGjQjBA\nMB0GA1UdDgQWBBQk7HsGhlcS1n5VnCOnNEAJyZroQzAPBgNVHRMBAf8EBTADAQH/\nMA4GA1UdDwEB/wQEAwICBDANBgkqhkiG9w0BAQsFAAOCAYEAXrV0Z5SkJss/hwT9\nRN/ShyG2ZGOCqUyUH76lxWSC7UU2Qtv7eWtUzQ4EKpjSxbquv70b4o2IQK2SMcKi\nW3uJlZXnnnHTYUgWvxeEV0/WMi4dBYYID7KwEg3dUgmN3eI67yEbLn3O9Ym1QYwl\ndF7JP8rpIeuU+nXhCTv3sS7cwBUZ2pGKur6EWgVk95WKhQQ3kYamEn7mJDha1Le4\nvcV9613/BTU0FT9ExGZvY23RQykeSo/brl2rqi5XbKRIh62H3AVIF9Q1524Mk07w\nux4SUbxZes5U7z9pBPYhlBJjstL19KIa9utHgDCv5ON2hQOML5TPde1uyZCvRkIB\n02ZNG8tepneX3l/ACn0I/t9aQvalTkx1OgMI/VsYJwuTpa/CbIi8zx6R6Lcx0gx1\nOM7VP6kHrQcRiet5JxESk2qmR+Madorx5rEnMkaiaSQZnGTMzzrVahLFSx/axwZJ\nvwK/VToAwzRjVBwhtRTXbcU2nBJcvWTc+vjexeCZyajIHkpN\n-----END CERTIFICATE-----\n",
+  "issuer_ca": "Certificate:\n    Data:\n        Version: 3 (0x2)\n        Serial Number: 1 (0x1)\n        Signature Algorithm: sha256WithRSAEncryption\n        Issuer: CN=swtpm-localca-rootca\n        Validity\n            Not Before: Oct 21 06:23:02 2026 GMT\n            Not After : Oct 19 06:23:02 2056 GMT\n        Subject: CN=swtpm-localca\n        Subject Public Key Info:\n            Public Key Algorithm: rsaEncryption\n                Public-Key: (3072 bit)\n                Modulus:\n                    00:a0:50:4e:a4:5f:e6:78:7b:f5:db:2e:55:ed:17:\n                    34:5a:85:8f:3a:56:a6:29:71:d9:43:85:64:6f:d7:\n                    84:09:df:9f:c7:7f:cd:d1:3f:3f:95:1f:bf:41:be:\n                    47:e4:f6:aa:a7:36:f9:d3:ae:b7:0b:e1:86:7c:99:\n                    24:ab:92:18:6f:fa:05:57:fe:94:78:56:ff:3f:21:\n                    c3:ba:36:1f:47:8f:39:70:1b:ad:54:c0:a2:f9:82:\n                    20:e0:04:b0:d7:6c:ff:6b:d5:56:49:ac:34:01:54:\n                    94:a5:a5:dd:62:cb:b1:a1:39:a1:38:98:df:18:96:\n                    a4:59:fc:86:5b:1e:90:d0:67:72:4b:71:43:8f:65:\n                    85:76:0f:ee:38:db:3e:b9:96:a5:58:95:24:25:e7:\n                    0c:e4:32:9d:19:2e:66:fb:29:62:82:86:b0:36:ae:\n                    bc:b9:01:75:4f:c4:37:4d:7f:46:77:c6:4a:7f:79:\n                    c9:46:9d:32:a8:7e:07:48:a6:bd:a8:72:71:b9:3b:\n                    c3:41:7e:49:bc:e7:f5:b2:d2:45:60:27:8e:74:86:\n                    1d:3e:18:52:b7:c1:64:45:f6:2f:06:2f:5b:6f:40:\n                    81:89:3f:7c:bd:56:8a:03:67:e5:3f:33:61:61:f3:\n                    c0:5d:6b:22:86:12:29:10:08:14:de:f7:42:ca:49:\n                    82:b7:f1:08:ed:9c:a3:bf:fb:4d:1d:3d:a5:a9:80:\n                    69:29:bd:f4:a6:30:9e:b4:29:96:17:dd:10:dc:d1:\n                    11:31:fe:f3:31:1b:9b:05:de:ba:6b:73:37:ac:07:\n                    3f:69:44:da:c4:79:35:16:3a:54:a5:ed:fb:5b:c8:\n                    9c:df:8f:f0:6a:79:8e:38:ca:1c:ec:c8:cd:51:0e:\n                    ac:f7:36:06:e2:17:25:8b:04:a6:80:f0:ce:39:4a:\n                    b4:a0:67:92:02:c8:12:aa:6a:1b:57:01:03:4f:57:\n                    df:21:94:01:14:ca:ed:49:3b:d3:de:3d:e3:d9:92:\n                    73:fe:93:9b:d9:be:27:2e:72:41\n                Exponent: 65537 (0x10001)\n        X509v3 extensions:\n            X509v3 Subject Key Identifier: \n                56:23:0F:41:15:D5:77:10:C8:6F:FE:EA:AA:E3:C9:06:98:73:D3:5D\n            X509v3 Basic Constraints: critical\n                CA:TRUE\n            X509v3 Authority Key Identifier: \n                24:EC:7B:06:86:57:12:D6:7E:55:9C:23:A7:34:40:09:C9:9A:E8:43\n            X509v3 Key Usage: critical\n                Certificate Sign\n    Signature Algorithm: sha256WithRSAEncryption\n    Signature Value:\n        0f:85:0c:b1:e8:b3:06:63:a1:86:b1:85:a6:e4:e1:7f:5b:ab:\n        a0:d0:6d:25:21:ac:7a:e7:24:db:1b:d2:32:a1:99:d9:f1:55:\n        0d:bc:43:29:92:24:9b:53:7c:79:3f:89:4e:c6:e0:ed:47:9c:\n        dd:b4:45:0e:44:ac:0e:8a:2f:cc:89:b4:dc:20:8b:1a:ba:9a:\n        91:29:11:4e:78:17:3d:2c:b5:3d:91:64:17:ad:76:fc:75:da:\n        8e:22:97:2a:f5:8c:e4:06:f5:41:75:2d:4b:9f:b8:e0:8e:30:\n        62:a5:6b:72:41:78:2e:1c:c4:8e:ce:a0:43:dc:7a:fe:6f:5b:\n        cf:3b:28:16:a0:9d:46:33:c8:f9:ab:91:fe:a4:25:0b:a5:30:\n        cb:c7:43:d1:e1:20:17:15:c0:c5:43:98:ba:e0:e9:58:76:c2:\n        68:e6:11:c9:b0:3b:c3:aa:d1:65:2a:80:45:6a:35:bf:75:c2:\n        5c:9d:33:3c:c3:31:a2:c1:07:8f:09:45:be:b4:d6:bb:81:fa:\n        6b:10:95:48:27:f7:0f:3e:9d:e6:2e:29:ed:d6:99:e8:60:ba:\n        1c:4d:69:a8:38:4b:08:59:e2:1a:bc:19:76:18:8d:35:a6:2f:\n        3f:b4:59:22:8a:5a:b7:0c:36:79:29:0f:cd:75:b7:ae:a2:b2:\n        a7:87:18:4b:e6:10:30:85:f6:56:4f:15:63:f8:a4:5a:e7:4d:\n        e4:3c:e1:e5:e3:85:e6:ed:f7:6c:65:13:00:0e:60:e0:05:e2:\n        a3:84:b0:a4:48:7a:03:e4:2b:62:06:c8:80:9b:10:a3:c9:89:\n        61:70:ba:62:63:ab:4a:b6:2f:b4:aa:f9:b1:de:3d:5b:b5:74:\n        1f:88:05:14:cf:4f:76:c3:55:28:43:40:6c:eb:78:08:63:14:\n        75:08:a9:de:93:7d:09:c5:5b:e6:fb:ad:2a:2d:c7:84:e8:bd:\n        9d:16:73:02:d6:20:36:c5:dc:70:d9:6f:ff:56:a3:90:83:15:\n        59:f2:69:fe:30:3b\n-----BEGIN CERTIFICATE-----\nMIIEFzCCAn+gAwIBAgIBATANBgkqhkiG9w0BAQsFADAfMR0wGwYDVQQDDBRzd3Rw\nbS1sb2NhbGNhLXJvb3RjYTAgFw0yNjEwMjEwNjIzMDJaGA8yMDU2MTAxOTA2MjMw\nMlowGDEWMBQGA1UEAwwNc3d0cG0tbG9jYWxjYTCCAaIwDQYJKoZIhvcNAQEBBQAD\nggGPADCCAYoCggGBAKBQTqRf5nh79dsuVe0XNFqFjzpWpilx2UOFZG/XhAnfn8d/\nzdE/P5Ufv0G+R+T2qqc2+dOutwvhhnyZJKuSGG/6BVf+lHhW/z8hw7o2H0ePOXAb\nrVTAovmCIOAEsNds/2vVVkmsNAFUlKWl3WLLsaE5oTiY3xiWpFn8hlsekNBncktx\nQ49lhXYP7jjbPrmWpViVJCXnDOQynRkuZvspYoKGsDauvLkBdU/EN01/RnfGSn95\nyUadMqh+B0imvahycbk7w0F+Sbzn9bLSRWAnjnSGHT4YUrfBZEX2LwYvW29AgYk/\nfL1WigNn5T8zYWHzwF1rIoYSKRAIFN73QspJgrfxCO2co7/7TR09pamAaSm99KYw\nnrQplhfdENzRETH+8zEbmwXeumtzN6wHP2lE2sR5NRY6VKXt+1vInN+P8Gp5jjjK\nHOzIzVEOrPc2BuIXJYsEpoDwzjlKtKBnkgLIEqpqG1cBA09X3yGUARTK7Uk70949\n49mSc/6Tm9m+Jy5yQQIDAQABo2MwYTAdBgNVHQ4EFgQUViMPQRXVdxDIb/7qquPJ\nBphz010wDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEGDAWgBQk7HsGhlcS1n5VnCOn\nNEAJyZroQzAOBgNVHQ8BAf8EBAMCAgQwDQYJKoZIhvcNAQELBQADggGBAA+FDLHo\nswZjoYaxhabk4X9bq6DQbSUhrHrnJNsb0jKhmdnxVQ28QymSJJtTfHk/iU7G4O1H\nnN20RQ5ErA6KL8yJtNwgixq6mpEpEU54Fz0stT2RZBetdvx12o4ilyr1jOQG9UF1\nLUufuOCOMGKla3JBeC4cxI7OoEPcev5vW887KBagnUYzyPmrkf6kJQulMMvHQ9Hh\nIBcVwMVDmLrg6Vh2wmjmEcmwO8Oq0WUqgEVqNb91wlydMzzDMaLBB48JRb601ruB\n+msQlUgn9w8+neYuKe3WmehguhxNaag4SwhZ4hq8GXYYjTWmLz+0WSKKWrcMNnkp\nD811t66isqeHGEvmEDCF9lZPFWP4pFrnTeQ84eXjhebt92xlEwAOYOAF4qOEsKRI\negPkK2IGyICbEKPJiWFwumJjq0q2L7Sq+bHePVu1dB+IBRTPT3bDVShDQGzreAhj\nFHUIqd6TfQnFW+b7rSotx4TovZ0WcwLWIDbF3HDZb/9Wo5CDFVnyaf4wOw==\n-----END CERTIFICATE-----\n",
+  "attest": "ff54434780180022000b13f7673fdad9d15f02f6c34be80206c4ce5eef2366415e0c361139645e1e524300205ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e0000000000013e68000000090000000001201910230016363600000001000b03ff03000020c10549023ecc2b648445111fc8d7a33784ef7e71967d62f627e32c4ce0792932",
+  "signature": "0018000b0020a1659345c59b7e6f16089c2f63cdf117390eaee918863aa52205734c065ba50c00204298cf3a715a8c4315457ebd14366d9ea08aa4f29d5155d484db000f41c27e2c",
+  "pcrs": {
+   "0": "91b9da60a8328507e4e8c9f899e574b24cfe62a332fb56691bec28a327c2fd89",
+   "1": "5ef1c363ce7f7a374b29fb2848fb10639acd09db847d6833825e31545fb7e5be",
+   "2": "75463a407468789980ad267b9c4acffbfc9161d2d91f33a7d5bcb0bc62254973",
+   "3": "0000000000000000000000000000000000000000000000000000000000000000",
+   "4": "ba79389117a789a9e999be694210c7331fa4869d8185f7fe1cb583b63207c88a",
+   "5": "0000000000000000000000000000000000000000000000000000000000000000",
+   "6": "0000000000000000000000000000000000000000000000000000000000000000",
+   "7": "0000000000000000000000000000000000000000000000000000000000000000",
+   "8": "634829d57938655c35027d2cbf16bf8400f4d25ec69c27f9bc27f68023aca1f7",
+   "9": "6c764def83520256b01022a63163bc60ef966ecc9e3349466187ed8cb21911a8"
+  },
+  "event_log": [
+   {
+    "pcr": 0,
+    "type": "EV_S_CRTM_CONTENTS",
+    "description": "BL1: TF-A boot ROM (CRTM)",
+    "digest": {
+     "sha256": "d2dc55c3dc2b2054baceb487c33004ff5e226917790a229a34b03bc98cd1ebdd"
+    }
+   },
+   {
+    "pcr": 0,
+    "type": "EV_POST_CODE",
+    "description": "BL2: TF-A trusted boot firmware",
+    "digest": {
+     "sha256": "c7557e7b0376d82394a44e182b1ef682145c6413b1efcf64fd54c9830fab5f6d"
+    }
+   },
+   {
+    "pcr": 0,
+    "type": "EV_POST_CODE",
+    "description": "BL31: TF-A EL3 runtime firmware",
+    "digest": {
+     "sha256": "4fdca50536f5a6179ac662e1c2afee07eb92958dc6767338e9143166ff8c2f79"
+    }
+   },
+   {
+    "pcr": 1,
+    "type": "EV_PLATFORM_CONFIG_FLAGS",
+    "description": "Platform configuration: virt,acpi=off,secure=on,mte=off,gic-version=3,virtualization=false;cpu=max,sme=off,pauth-impdef=on;smp=2;m=1057",
+    "digest": {
+     "sha256": "4da74727d5e67c805718ae35e500354832dd6ce1fe50e7ba84013219034f1ae0"
+    }
+   },
+   {
+    "pcr": 2,
+    "type": "EV_EFI_PLATFORM_FIRMWARE_BLOB",
+    "description": "BL32: OP-TEE OS header",
+    "digest": {
+     "sha256": "59878f740eb302367361b783d1e18eda9678d094dcc5d685b61feb9d5ae1bcaa"
+    }
+   },
+   {
+    "pcr": 2,
+    "type": "EV_EFI_PLATFORM_FIRMWARE_BLOB",
+    "description": "BL32: OP-TEE OS pager",
+    "digest": {
+     "sha256": "e653d9bc18ebf9473c63fefa046faa494851963cc80700176096c085c8c812c3"
+    }
+   },
+   {
+    "pcr": 2,
+    "type": "EV_EFI_PLATFORM_FIRMWARE_BLOB",
+    "description": "BL32: OP-TEE OS pageable",
+    "digest": {
+     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+   },
+   {
+    "pcr": 4,
+    "type": "EV_EFI_BOOT_SERVICES_APPLICATION",
+    "description": "BL33: U-Boot",
+    "digest": {
+     "sha256": "ff04d8177b68b1cc87c3e01847faa2fd49d224d15a7d8d877743908fc0c28f1c"
+    }
+   },
+   {
+    "pcr": 8,
+    "type": "EV_IPL",
+    "description": "Kernel command line: console=ttyAMA0 rdinit=/init",
+    "digest": {
+     "sha256": "f527a4e073955b90bb72ff912d7a92116fec08203dabb550d12f1e23b8ff6c1b"
+    }
+   },
+   {
+    "pcr": 9,
+    "type": "EV_IPL",
+    "description": "Linux kernel Image",
+    "digest": {
+     "sha256": "30a47ae95518f51af89d766f322aaa277ed6f2482a8ffb10dc3e62e82a924386"
+    }
+   },
+   {
+    "pcr": 9,
+    "type": "EV_IPL",
+    "description": "initramfs initramfs-good.cpio.gz",
+    "digest": {
+     "sha256": "04375069fbdd0d0c8a602a7fa7471ac3ca259a8160dfd4114491c301597368d2"
+    }
+   }
+  ]
+ },
+ "optee": {
+  "e": "010001",
+  "n": "cb408774fe08b934029bb35f04d7a5b4696cc3036f0aef78d1f022ab9085358dfa89a80ff003fd1c7616e95830b22a6f53882c910a7b41eb7fc82e8d5cacd518ae8cea88c8a9fdf3953ea16c755fb2df39d97c55de7c35f799641861e6c4a45273c11af97ab41201ba802ef133c8118b55809057442e3af8b8a585b39f0d17575e1103ae2fe60954d74306510b365ac490a662090f5e4a0cdd1d90a7f264a8424e1239122995678401ad579da058c4a8483853c4d8951948bcd315ca54c42e4409c7769f7f4c3b7060d7e48c6c3391fa95bf676aca1e8d03816f60e57d9b2f371f5fb6ade37e5698313532a003abbcd8187009058b236e5b0cb5bb1e22c4648cb4df3b0bdc0ea7feb6876bf45802508ba2323ed8e7a7fe631f7602c42f0096040a90dd3a51453060c76dc22fdbd19c04ee7fcd939a3b920c6fd376a04f7c631a5960232d87b70d481b9458d5b6b0e264f043271c36865168ef2af64b3b0b7a71fea80e2b61fdb7d262c1d8822851384f0ec4ee846f7e6bd4450d427233a54a9f",
+  "attest": {
+   "rot": "optee",
+   "ta_uuid": "3ef86ac2-55b2-4243-810a-33347fcd1d5d",
+   "nonce": "5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e5ca1ab1e",
+   "tee_core": {
+    "hash": "8b7c651a6c696455fa8080fca4b5f0cda8f839b0e8ce6fa5a485b95162019a1a",
+    "sig": "3939008220a044a2c3213faa79da8376597e222b4b0432e7382728bc45620ee0724e5036e26f7e243175ab8031598269af30b9c0aa684fcd502f5029789e50b9bcfe1e7eb5cd2e24aabd0bc92c6e5594fc4d70b85a0fb5437f274eea657cc133bc70a4299fdc95d1497aedc7c7904ef8b901fd85bb3c9e46b0f15b6fa3b242ea23c5e24922413a83a3b325bc80361de0c57bc814b3b8e95fa5c529db02d2e4db0fe3b3f760a5cb8632455c8ff85f6572347553239e4023eba171011735cb38ae2e2c24c8bd30ec57fbffb03c6b956e49dca67d72b36baecc5251db9d7d08ef1163959758da6e468217bc031e9c4e31cbcb0cdefc2940fa5bf9737c4a8e4d00e8bc9713ffb4c31e3122ce47e7a860e592fe6cf999c056e5ae93c0dde190df30bd98202085a97141c8198085ede0e719c6006e041ab63c802cada1da1c2fe1ccc778f6ed364e5676ca493edcb6eaa24e979b494e26a5bab53f080a2f23086e0c9b5bf88d40f6ab1afa25fa0e8aff696c08f1fd2d9c42596abe654f36bfed4a380c"
+   },
+   "ta_memory": {
+    "hash": "789ef718369d473f1f55514d9ce8fe2b8c96875a6401c48f1ac7edb518484d31",
+    "sig": "641fa36904a91cf7be3d609c1accf650de9b9c596c398a860e6f15a6603b98e3eff362df0c296c6427499f33d82cd4ea14c7e2a9781ba5182bc4ee09e53ccbabc024b40950731716174c325fe5427ec7797477711b1c5fa8b174f62bb28d82dd2e5a9953b5c5c338817a839ddbed50a981bec28a537571d19c1f7d188df21e725545280d6ae47a1f2bc76f2c5373461a630c83ea5b584107890fb6d0d92d5bd1b2e139fed6c3792df39c3b0668a02c5eb237e3664a3f475406e5b7edefb4a13d42c7e779e7966e95ae9438c91eceb4cb4dd603b3a7487f47f0d75343d256f67436c480c56620ed557cba8cb01e6cc84fe91b0fbff2cabd981619b7fcd1d120f5685004c77970bbd1944971cc1cb0b9cde09e725e21a049c6f4353343d31c25c4ed02fe1c590e03ec0e4945067cd0b2494145ffc619686b2b563031669bdc6d9e301aea41c946a29d112ffaf27d30396f31d31622e807722eef01976b51bedd098ed7f702b2a5d8e21d73df0a8f7593c701c3cfcac48f54a61c0eb2a844bfb096"
+   },
+   "ta_shdr": {
+    "hash": "a7665c4207437a31a7bc4da18d12719e88a93732a5eeeb785abb315c3ead62c4",
+    "sig": "7c3fe56bd24c5856966af393235d17b52cf5919e3bf0e2fd54336eb6264bfbecf0a6d183dd75d34ea25f8895f75d1566164e5fda8c5d1d039a1232d72154b1c2d838397b574c18a858f6af5f43566b81cf77c2eb3ba93e9357e22050b5c8d02da5a1bdc2fae17afb6553a06f417b8f8e38d203796a0a2003f7e6c9c02ff8e525ffe530062665df2ca4a3d5ba0d3bc2c84d9b0b792ed283a4bb93dd5e04fd2446ab6c1b7bb6f958a8ae0c2d7eacce705d1766062bf78b1ed994b8874fab0ad9aefd5b9cdf4e3aeece8eee987e5df8a8df4ee1edfa2d68aa1fdb4d6c7cce028bdb3bfb197b15d6045bd611f1132df04414c9d1f11d565ead0a674a4e89b0e7237bdbf7df4e6d4fb86cf1b1022f69c4795e816d6711e6ae8f32de9666071af7493bb5d35baf49f33ecce5bc9e750f84302e522c3f5d62a8e039e420569b6aedc9b650107bc478c32fccc2ca6c40bec28c5701bc0b7a5ee7da89b8f4f6af038f935ce6cd9469ca3e4f1a8e9c16583d9707572624c27a194cc060c2a7b9853bcec0c9"
+   }
+  }
+ }
+}

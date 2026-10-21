@@ -37,6 +37,9 @@ pub enum ArgRelationship {
     /// vTPM is bound to platform TPM
     VtpmBoundToPtpm,
 
+    /// TEE OS (secure world) is anchored in the measured platform firmware
+    TeeAnchoredInPlatform,
+
     /// Policy validation
     PolicyValidates,
 }
@@ -50,6 +53,7 @@ impl ArgRelationship {
             ArgRelationship::VmIncludesHypervisor => "VmIncludesHypervisor",
             ArgRelationship::RuntimeLinkedToBoot => "RuntimeLinkedToBoot",
             ArgRelationship::VtpmBoundToPtpm => "VtpmBoundToPtpm",
+            ArgRelationship::TeeAnchoredInPlatform => "TeeAnchoredInPlatform",
             ArgRelationship::PolicyValidates => "PolicyValidates",
         }
     }

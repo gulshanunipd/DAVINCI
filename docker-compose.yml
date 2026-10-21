@@ -1,6 +1,28 @@
 version: '3.8'
 
 services:
+  # Attested platform: emulated Arm v8 machine with two real Roots of Trust
+  # (TPM 2.0 via swtpm, OP-TEE/TrustZone via TF-A + OP-TEE OS on QEMU) and
+  # their MRAL collectors. Publishes the TPM manufacturer CA to ./keys/rot.
+  platform:
+    build:
+      context: ./mral-adapters
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"   # platform controller (test harness: boot profiles)
+      - "4010:4010"   # MRAL TPM collector
+      - "4020:4020"   # MRAL OP-TEE collector (guest)
+    volumes:
+      - platform-state:/var/lib/davinci
+      - ./keys/rot:/trust
+    networks:
+      - spritz-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4000/status | grep -q '\"guest_ready\": true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   # PostgreSQL database for PCE
   pce-db:
     image: postgres:16-alpine
@@ -41,7 +63,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # Attestation Manager
+  # Attestation Manager (MRAL calls the platform's collectors)
   attestation-manager:
     build:
       context: ./attestation-manager
@@ -51,12 +73,18 @@ services:
     environment:
       PCE_URL: http://pce-service:3032
       DAVINCI_KEYS_DIR: /keys
+      DAVINCI_TRUST_DIR: /keys/rot
+      MRAL_TPM_URL: http://platform:4010
+      MRAL_OPTEE_URL: http://platform:4020/cgi-bin/attest
       AM_BIND: 0.0.0.0:3030
       RUST_LOG: info
     volumes:
-      - ./keys:/keys:ro
+      - ./keys:/keys   # writable: enrollment.json
     depends_on:
-      - pce-service
+      pce-service:
+        condition: service_started
+      platform:
+        condition: service_healthy
     networks:
       - spritz-network
 
@@ -70,26 +98,20 @@ services:
     environment:
       ATTESTATION_MANAGER_URL: http://attestation-manager:3030
       DAVINCI_KEYS_DIR: /keys
+      DAVINCI_REFERENCE: /reference/reference-values.json
       VERIFIER_BIND: 0.0.0.0:3031
       RUST_LOG: info
     volumes:
       - ./keys:/keys:ro
+      - ./reference:/reference:ro
     depends_on:
       - attestation-manager
     networks:
       - spritz-network
 
-  # TPM Simulator
-  tpm-simulator:
-    image: unibuffalo/tpm2-simulator
-    ports:
-      - "2321:2321"
-      - "2322:2322"
-    networks:
-      - spritz-network
-
 volumes:
   pce-db-data:
+  platform-state:
 
 networks:
   spritz-network:

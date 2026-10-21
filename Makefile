@@ -1,10 +1,13 @@
 # Makefile for DAVINCI Prototype
 
+PLATFORM_IMAGE ?= davinci-platform
+PLATFORM_STATE ?= davinci-platform-state
+
 # Default target
 .PHONY: all
 all: build
 
-# Generate ECDSA-P256 keys (AM + per-RoT trusted material). Run once before use.
+# Generate the Attestation Manager ECDSA-P256 key pair. Run once before use.
 .PHONY: keys
 keys:
 	@echo "Generating DAVINCI keys..."
@@ -20,6 +23,25 @@ build: keys
 	@echo "Building Verifier..."
 	cd verifier && cargo build
 	@echo "Build complete!"
+
+# Build the attested platform image: swtpm (TPM 2.0) + TF-A/OP-TEE/Linux on
+# QEMU + the MRAL collectors. First build takes ~20 min (kernel, firmware).
+.PHONY: platform-image
+platform-image:
+	DOCKER_BUILDKIT=1 docker build -t $(PLATFORM_IMAGE) mral-adapters
+
+# Run the attested platform. Publishes the TPM manufacturer CA to keys/rot/.
+.PHONY: platform
+platform: platform-image
+	mkdir -p keys/rot
+	-docker rm -f davinci-platform >/dev/null 2>&1
+	docker run -d --name davinci-platform -p 4000:4000 -p 4010:4010 -p 4020:4020 \
+	  -v $(PLATFORM_STATE):/var/lib/davinci -v "$(CURDIR)/keys/rot":/trust $(PLATFORM_IMAGE)
+	@echo "Platform booting (TPM collector :4010, OP-TEE collector :4020, controller :4000)"
+
+.PHONY: platform-stop
+platform-stop:
+	-docker rm -f davinci-platform
 
 # Run all services (recommended: run each target in its own terminal)
 .PHONY: run
@@ -43,9 +65,9 @@ run-verifier:
 	@echo "Starting Verifier on port 3031..."
 	cd verifier && cargo run
 
-# Run with Docker
+# Run everything with Docker Compose
 .PHONY: docker-run
-docker-run:
+docker-run: keys
 	@echo "Starting services with Docker Compose..."
 	docker-compose up --build
 
@@ -55,49 +77,43 @@ docker-stop:
 	@echo "Stopping Docker services..."
 	docker-compose down
 
+# Enroll the RoTs and record reference values (run once the stack is up)
+.PHONY: provision
+provision:
+	cd demo && python3 provision.py
+
 # Run demo
 .PHONY: demo
 demo:
 	@echo "Running DAVINCI demo..."
 	cd demo && python3 demo_scenario.py
 
-# Run boot attestation demo
-.PHONY: demo-boot
-demo-boot:
-	@echo "Running boot attestation demo..."
-	cd demo && chmod +x boot_attestation.sh && ./boot_attestation.sh
-
-# Run runtime attestation demo
-.PHONY: demo-runtime
-demo-runtime:
-	@echo "Running runtime attestation demo..."
-	cd demo && chmod +x runtime_attestation.sh && ./runtime_attestation.sh
-
-# Run trusted vs untrusted demo
+# Run one scenario: make demo-trust SCENARIO=tampered-ta
+SCENARIO ?= good
 .PHONY: demo-trust
 demo-trust:
-	@echo "Running trusted vs untrusted demo..."
-	cd demo && python3 demo_trusted_vs_untrusted.py
+	cd demo && python3 demo_trusted_vs_untrusted.py $(SCENARIO)
 
-# Run untrusted demo
-.PHONY: demo-untrusted
-demo-untrusted:
-	@echo "Running untrusted demo..."
-	cd demo && python3 demo_trusted_vs_untrusted.py untrusted
-
-# Run comparison demo
+# Run all trusted/untrusted scenarios side by side
 .PHONY: demo-compare
 demo-compare:
 	@echo "Running trusted vs untrusted comparison demo..."
 	cd demo && python3 demo_comparison.py
 
-# Test Rust services
+# Unit tests of the Rust services
 .PHONY: test
 test:
 	@echo "Running tests for Attestation Manager..."
 	cd attestation-manager && cargo test
 	@echo "Running tests for Verifier..."
 	cd verifier && cargo test
+	@echo "Running tests for Privacy Control Engine..."
+	cd pce-service && cargo test --lib   # tests/test_persistence.rs needs DATABASE_URL (Postgres)
+
+# End-to-end test against the running platform and services
+.PHONY: test-e2e
+test-e2e:
+	./demo/test_integration.sh
 
 # Clean build artifacts
 .PHONY: clean
@@ -105,17 +121,7 @@ clean:
 	@echo "Cleaning build artifacts..."
 	cd attestation-manager && cargo clean
 	cd verifier && cargo clean
-
-# Install Python dependencies
-.PHONY: install-python-deps
-install-python-deps:
-	@echo "Installing Python dependencies..."
-	pip install requests
-
-# Setup development environment
-.PHONY: setup
-setup: install-python-deps
-	@echo "Development environment setup complete!"
+	cd pce-service && cargo clean
 
 # Help
 .PHONY: help
@@ -123,20 +129,20 @@ help:
 	@echo "DAVINCI Prototype Makefile"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  all                  - Build all services (default)"
-	@echo "  build                - Build all Rust services"
-	@echo "  run                  - Run all services"
-	@echo "  run-attestation-manager - Run Attestation Manager service"
-	@echo "  run-verifier         - Run Verifier service"
-	@echo "  docker-run           - Run all services with Docker Compose"
+	@echo "  build                - Generate AM key, build the three Rust services"
+	@echo "  platform-image       - Build the attested platform image (TPM + OP-TEE)"
+	@echo "  platform             - Run the attested platform container"
+	@echo "  platform-stop        - Stop the platform container"
+	@echo "  run-pce              - Run Privacy Control Engine (:3032)"
+	@echo "  run-attestation-manager - Run Attestation Manager (:3030)"
+	@echo "  run-verifier         - Run Verifier (:3031)"
+	@echo "  docker-run           - Run platform + services with Docker Compose"
 	@echo "  docker-stop          - Stop Docker services"
-	@echo "  demo                 - Run complete DAVINCI demo"
-	@echo "  demo-boot            - Run boot attestation demo"
-	@echo "  demo-runtime         - Run runtime attestation demo"
-	@echo "  demo-trust           - Run trusted vs untrusted demo"
-	@echo "  demo-untrusted       - Run untrusted demo"
-	@echo "  demo-compare         - Run comparison demo"
-	@echo "  test                 - Run tests for all services"
+	@echo "  provision            - Enroll RoTs and record reference values"
+	@echo "  demo                 - Run one end-to-end attestation round"
+	@echo "  demo-trust           - Run one scenario (SCENARIO=good|tampered-kernel|tampered-ta|replay)"
+	@echo "  demo-compare         - Run all scenarios side by side"
+	@echo "  test                 - Unit tests of the Rust services"
+	@echo "  test-e2e             - End-to-end test against the running stack"
 	@echo "  clean                - Clean build artifacts"
-	@echo "  setup                - Setup development environment"
 	@echo "  help                 - Show this help message"

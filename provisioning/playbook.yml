@@ -1,7 +1,8 @@
 ---
 # Ansible playbook that prepares a machine to build and run DAVINCI.
-# It installs the system libraries, the Rust toolchain, Python, generates the
-# key material, and builds the three services. It is written for Ubuntu 22.04
+# It installs the system libraries, the Rust toolchain, Python and Docker,
+# generates the key material, builds the three services and builds the attested
+# platform image (TPM 2.0 + OP-TEE). It is written for Ubuntu 22.04
 # and is used by the Vagrantfile, but you can also run it against any Ubuntu
 # host with:
 #
@@ -26,8 +27,19 @@
           - git
           - python3
           - ca-certificates
+          - docker.io
+          - docker-buildx
+          # Runs the small arm64 guest-userland stage of the platform image.
+          - qemu-user-static
+          - binfmt-support
         update_cache: true
         state: present
+
+    - name: Let the run user use Docker
+      user:
+        name: "{{ run_user }}"
+        groups: docker
+        append: true
 
     - name: Install the Rust toolchain for the run user
       become_user: "{{ run_user }}"
@@ -55,8 +67,15 @@
         chdir: "{{ project_dir }}"
         executable: /bin/bash
 
+    - name: Build the attested platform image (TPM 2.0 + OP-TEE, ~20-40 min)
+      command: docker build -t davinci-platform mral-adapters
+      args:
+        chdir: "{{ project_dir }}"
+      environment:
+        DOCKER_BUILDKIT: "1"
+
     - name: Show how to start the services
       debug:
         msg:
           - "Provisioning finished. Enter the VM with: vagrant ssh"
-          - "Then start the services from /vagrant as described in docs/implementation-report.md."
+          - "Then from /vagrant: make platform, the three run-* targets, make provision, make demo-compare."

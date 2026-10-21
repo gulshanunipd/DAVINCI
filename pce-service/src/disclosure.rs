@@ -26,10 +26,14 @@ impl DisclosurePolicy {
         required.insert("qualified_signer".to_string());
         required.insert("extra_data".to_string());
         required.insert("clock_info".to_string());
-        
+        required.insert("pcrs".to_string());
+
         let mut aggregatable = HashSet::new();
         aggregatable.insert("ima_log".to_string());
         aggregatable.insert("event_log".to_string());
+        // The raw TPMS_ATTEST embeds the AK qualified name; exporting it would
+        // undo the pseudonymization of `qualified_signer`.
+        aggregatable.insert("quote".to_string());
         aggregatable.insert("firmware_version".to_string());
         aggregatable.insert("platform_info".to_string());
         
@@ -141,6 +145,32 @@ impl DisclosurePolicy {
         }
     }
     
+    /// Creates a default disclosure policy for OP-TEE attestation PTA evidence.
+    pub fn for_optee() -> Self {
+        let mut required = HashSet::new();
+        for f in ["nonce", "tee_core_hash", "ta_uuid", "ta_memory_hash", "ta_shdr_digest"] {
+            required.insert(f.to_string());
+        }
+
+        // Signatures were verified by the MRAL; the verifier only needs the
+        // measurements, so the bulky signatures are replaced by their hash.
+        let mut aggregatable = HashSet::new();
+        aggregatable.insert("signature".to_string());
+        aggregatable.insert("shdr_signature".to_string());
+
+        // Sensitive, verification-irrelevant fields removed entirely (suppress).
+        let mut redact = HashSet::new();
+        for f in ["hostname", "ip_address", "serial_number", "operator_note"] {
+            redact.insert(f.to_string());
+        }
+
+        DisclosurePolicy {
+            required_for_verification: required,
+            aggregatable_fields: aggregatable,
+            redact_fields: redact,
+        }
+    }
+
     /// Applies the disclosure policy to a JSON value representing the evidence.
     /// It modifies the value in place and returns a manifest of the changes made.
     pub fn apply(&self, evidence: &mut Value) -> DisclosureManifest {
